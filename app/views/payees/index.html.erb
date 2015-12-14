@@ -1,0 +1,32 @@
+<p id="notice"><%= notice %></p>
+<p id="alert"><%= alert %></p>
+
+<h1>Listing Payees</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>Email</th>
+      <th>Balance</th>
+      <th>Currency</th>
+      <th colspan="3"></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @payees.each do |payee| %>
+      <tr>
+        <td><%= payee.email %></td>
+        <td><%= payee.balance %></td>
+        <td><%= payee.currency.code %></td>
+        <td><%= link_to 'Show', payee %></td>
+        <td><%= link_to 'Edit', edit_payee_path(payee) %></td>
+        <td><%= link_to 'Destroy', payee, method: :delete, data: { confirm: 'Are you sure?' } %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<br>
+
+<%= link_to 'New Payee', new_payee_path %>
