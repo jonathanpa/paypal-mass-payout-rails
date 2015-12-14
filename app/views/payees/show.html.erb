@@ -1,0 +1,20 @@
+<p id="notice"><%= notice %></p>
+<p id="alert"><%= alert %></p>
+
+<p>
+  <strong>Email:</strong>
+  <%= @payee.email %>
+</p>
+
+<p>
+  <strong>Balance:</strong>
+  <%= @payee.balance %>
+</p>
+
+<p>
+  <strong>Currency:</strong>
+  <%= @payee.currency.code %>
+</p>
+
+<%= link_to 'Edit', edit_payee_path(@payee) %> |
+<%= link_to 'Back', payees_path %>

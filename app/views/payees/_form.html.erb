@@ -1,0 +1,29 @@
+<%= form_for(@payee) do |f| %>
+  <% if @payee.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(@payee.errors.count, "error") %> prohibited this payee from being saved:</h2>
+
+      <ul>
+      <% @payee.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= f.label :email %><br>
+    <%= f.text_field :email %>
+  </div>
+  <div class="field">
+    <%= f.label :balance %><br>
+    <%= f.text_field :balance %>
+  </div>
+  <div class="field">
+    <%= f.label :currency %><br>
+    <%= f.collection_select(:currency_id, Currency.all, :id, :code) %>
+  </div>
+  <div class="actions">
+    <%= f.submit %>
+  </div>
+<% end %>
