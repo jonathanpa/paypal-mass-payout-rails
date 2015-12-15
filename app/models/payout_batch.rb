@@ -17,7 +17,7 @@ class PayoutBatch < ActiveRecord::Base
   before_validation :set_pending_status, on: :create
   before_validation :set_sender_batch_it, on: :create
 
-  has_many :payout_items
+  has_many :payout_items, dependent: :destroy
   has_many :payees, through: :payout_items
   belongs_to :currency
 
