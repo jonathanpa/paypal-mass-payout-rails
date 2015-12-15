@@ -1,7 +1,9 @@
 FactoryGirl.define do
-  factory :payee do
-    sequence(:email) { |n| "user_#{n}@email.com" }
-    balance 20
+  factory :payout_item do
+    amount 1.0
     currency { Currency.find_or_create_by(code: 'USD') }
+    payout_batch
+    payee
   end
 end
+

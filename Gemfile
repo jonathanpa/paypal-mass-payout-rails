@@ -1,7 +1,5 @@
 source 'https://rubygems.org'
 
-ruby '2.2.3'
-
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '4.2.5'
@@ -34,13 +32,12 @@ gem 'sdoc', '~> 0.4.0', group: :doc
 # Use Capistrano for deployment
 # gem 'capistrano-rails', group: :development
 
-gem 'paypal-sdk-rest'
-
 group :development, :test do
   gem 'pry-rails'
   gem 'pry-byebug'
   gem 'rspec-rails', '~> 3.0'
   gem 'dotenv-rails'
+  gem 'factory_girl_rails', '~> 4.0'
 end
 
 group :development do
@@ -49,9 +46,14 @@ group :development do
 
   # Spring speeds up development by keeping your application running in the background. Read more: https://github.com/rails/spring
   gem 'spring'
+  gem 'annotate'
+  gem 'guard'
+  gem 'guard-rspec'
 end
 
 group :test do
   gem 'shoulda-matchers', '~> 3.0'
-  gem 'factory_girl_rails', '~> 4.0'
 end
+
+gem 'paypal-sdk-rest'
+
