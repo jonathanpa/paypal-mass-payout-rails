@@ -30,4 +30,19 @@ describe PayoutItem do
       it { expect { item.save! }.not_to change { item.sender_item_id } }
     end
   end
+
+  describe '#format_for_paypal' do
+    let!(:item) { FactoryGirl.build(:payout_item) }
+
+    it 'generates a hash formatted for Paypal API' do
+      returned_hash = item.format_for_paypal
+
+      expect(returned_hash[:recipient_type]).to eq 'EMAIL'
+      expect(returned_hash[:amount][:value]).to eq item.amount
+      expect(returned_hash[:amount][:currency]).to eq item.currency.to_s
+      expect(returned_hash[:note]).to eq item.note
+      expect(returned_hash[:receiver]).to eq item.payee.email
+      expect(returned_hash[:sender_item_id]).to eq item.sender_item_id
+    end
+  end
 end

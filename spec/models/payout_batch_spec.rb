@@ -27,4 +27,23 @@ describe PayoutBatch do
       it { expect { batch.save! }.not_to change { batch.sender_batch_id } }
     end
   end
+
+  describe '#format_for_paypal' do
+    let!(:batch) { FactoryGirl.create(:payout_batch_with_items) }
+
+    it 'generates a hash formatted for Paypal API' do
+      returned_hash = batch.format_for_paypal
+
+      expect(returned_hash[:sender_batch_header][:sender_batch_id])
+        .to eq batch.sender_batch_id
+
+      expect(returned_hash[:sender_batch_header][:email_subject])
+        .to eq batch.email_subject
+
+      expect(returned_hash[:items].size).to eq batch.payout_items.count
+
+      receivers_emails = returned_hash[:items].map { |item| item[:receiver] }
+      expect(receivers_emails).to eq batch.payees.pluck(:email)
+    end
+  end
 end

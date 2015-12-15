@@ -36,6 +36,20 @@ class PayoutItem < ActiveRecord::Base
   validates :currency, presence: true
   validates :payee, presence: true
 
+  def fetch
+  end
+
+  def format_for_paypal
+    { recipient_type: 'EMAIL',
+      amount: {
+        value: self.amount.round(2),
+        currency: self.currency.to_s },
+      note: self.note,
+      receiver: self.payee.email,
+      sender_item_id: self.sender_item_id }
+  end
+
+
   private
 
   def set_transaction_status

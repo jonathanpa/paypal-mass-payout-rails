@@ -18,6 +18,7 @@ class PayoutBatch < ActiveRecord::Base
   before_validation :set_sender_batch_it, on: :create
 
   has_many :payout_items
+  has_many :payees, through: :payout_items
   belongs_to :currency
 
   validates :status, presence: true
@@ -31,6 +32,19 @@ class PayoutBatch < ActiveRecord::Base
     numericality: { greater_than_or_equal_to: 0 }
 
   validates :currency, presence: true
+
+  def fetch
+  end
+
+  def post
+  end
+
+  def format_for_paypal
+    { sender_batch_header: {
+        sender_batch_id: self.sender_batch_id,
+        email_subject: self.email_subject },
+      items: self.payout_items.map(&:format_for_paypal) }
+  end
 
   private
 

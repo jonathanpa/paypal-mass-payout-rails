@@ -1,7 +1,8 @@
 FactoryGirl.define do
   factory :payout_item do
-    payout_batch
+    amount 1.0
     currency { Currency.find_or_create_by(code: 'USD') }
+    payout_batch
     payee
   end
 end
