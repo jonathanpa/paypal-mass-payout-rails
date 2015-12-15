@@ -1,0 +1,29 @@
+test: &default
+
+  # Credentials for REST APIs
+  client_id: <%= ENV['PAYPAL_REST_CLIENT_ID'] %>
+  client_secret: <%= ENV['PAYPAL_REST_CLIENT_SECRET'] %>
+
+  # Mode can be 'live' or 'sandbox'
+  mode: sandbox
+
+  # Credentials for Classic APIs
+  app_id: xxx
+  username: xxx
+  password: xxx
+  signature: xxx
+  # # With Certificate
+  # cert_path: "config/cert_key.pem"
+  sandbox_email_address: Platform.sdk.seller@gmail.com
+
+  # # IP Address
+  # ip_address: 127.0.0.1
+  # # HTTP Proxy
+  # http_proxy: http://proxy-ipaddress:3129/
+
+development:
+  <<: *default
+
+production:
+  <<: *default
+  mode: live
