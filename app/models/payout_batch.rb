@@ -11,10 +11,11 @@
 #  fees            :float            default(0.0), not null
 #  created_at      :datetime         not null
 #  updated_at      :datetime         not null
+#  paypal_id       :string
 #
 
 class PayoutBatch < ActiveRecord::Base
-  before_validation :set_pending_status, on: :create
+  before_validation :set_unsent_status, on: :create
   before_validation :set_sender_batch_it, on: :create
 
   has_many :payout_items, dependent: :destroy
@@ -38,8 +39,10 @@ class PayoutBatch < ActiveRecord::Base
 
   def post
     if self.status == 'UNSENT'
-      paypal_payout = PayPal::SDK::REST::Payout.new(self.format_for_paypal)
-      paypal_payout.create
+      paypal_payout = PayPal::SDK::REST::Payout.new(format_for_paypal)
+      pp_payout_batch = paypal_payout.create
+
+      update_from_paypal(pp_payout_batch)
     else
       raise Paypal::MassPayout::BatchSentException.new(self)
     end
@@ -54,11 +57,17 @@ class PayoutBatch < ActiveRecord::Base
 
   private
 
-  def set_pending_status
+  def set_unsent_status
     self.status = 'UNSENT' if self.status.blank?
   end
 
   def set_sender_batch_it
-    self.sender_batch_id = SecureRandom.hex(8)
+    self.sender_batch_id = SecureRandom.hex(8) if self.sender_batch_id.blank?
+  end
+
+  def update_from_paypal(pp_payout_batch)
+    self.status = pp_payout_batch.batch_header.batch_status
+    self.paypal_id = pp_payout_batch.batch_header.payout_batch_id
+    save!
   end
 end

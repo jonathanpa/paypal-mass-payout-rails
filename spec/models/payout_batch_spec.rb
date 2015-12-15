@@ -51,17 +51,41 @@ describe PayoutBatch do
     context 'status UNSENT' do
       let!(:batch) { FactoryGirl.create(:payout_batch_with_items) }
 
+      let!(:pp_payout) { double(PayPal::SDK::REST::Payment) }
+
       it 'sends a payout POST request to Paypal' do
+        allow(batch).to receive(:update_from_paypal)
+
         expected_batch_hash = batch.format_for_paypal
-        payout = double(PayPal::SDK::REST::Payment)
 
         expect(PayPal::SDK::REST::Payout).to receive(:new).
           with(expected_batch_hash).
-          and_return(payout)
+          and_return(pp_payout)
 
-        expect(payout).to receive(:create)
+        expect(pp_payout).to receive(:create)
 
         batch.post
+      end
+
+      it 'updates the instance' do
+        pp_payout_batch_header =
+          instance_double(PayPal::SDK::REST::DataTypes::PayoutBatchHeader,
+                         batch_status: 'PENDING',
+                         payout_batch_id: 'BA3JVV5G4SCZN')
+
+        pp_payout_batch =
+          instance_double(PayPal::SDK::REST::DataTypes::PayoutBatch,
+                         batch_header: pp_payout_batch_header)
+
+        expect(PayPal::SDK::REST::Payout).to receive(:new).and_return(pp_payout)
+        expect(pp_payout).to receive(:create).
+          and_return(pp_payout_batch)
+
+        batch.post
+        batch.reload
+
+        expect(batch.status).to eq 'PENDING'
+        expect(batch.paypal_id).to eq 'BA3JVV5G4SCZN'
       end
     end
 
