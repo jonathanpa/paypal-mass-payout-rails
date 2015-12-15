@@ -37,6 +37,12 @@ class PayoutBatch < ActiveRecord::Base
   end
 
   def post
+    if self.status == 'UNSENT'
+      paypal_payout = PayPal::SDK::REST::Payout.new(self.format_for_paypal)
+      paypal_payout.create
+    else
+      raise Paypal::MassPayout::BatchSentException.new(self)
+    end
   end
 
   def format_for_paypal
@@ -49,7 +55,7 @@ class PayoutBatch < ActiveRecord::Base
   private
 
   def set_pending_status
-    self.status = 'UNSENT'
+    self.status = 'UNSENT' if self.status.blank?
   end
 
   def set_sender_batch_it
