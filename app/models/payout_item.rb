@@ -18,6 +18,9 @@
 #
 
 class PayoutItem < ActiveRecord::Base
+  before_validation :set_transaction_status, on: :create
+  before_validation :set_sender_item_id, on: :create
+
   belongs_to :payout_batch
   belongs_to :currency
   belongs_to :payee
@@ -32,4 +35,14 @@ class PayoutItem < ActiveRecord::Base
   validates :payout_batch, presence: true
   validates :currency, presence: true
   validates :payee, presence: true
+
+  private
+
+  def set_transaction_status
+    self.transaction_status = 'UNSENT'
+  end
+
+  def set_sender_item_id
+    self.sender_item_id = SecureRandom.hex(8) 
+  end
 end

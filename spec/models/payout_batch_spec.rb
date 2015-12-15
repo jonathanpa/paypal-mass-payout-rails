@@ -14,7 +14,7 @@ describe PayoutBatch do
       let!(:batch) { FactoryGirl.build(:payout_batch) }
 
       it { expect { batch.save! }.to change { batch.status }.from(nil).
-           to('PENDING') }
+           to('UNSENT') }
 
       it { expect { batch.save! }.to change { batch.sender_batch_id }.from(nil).
            to(a_string_matching(/[0-9a-f]{8}/)) }

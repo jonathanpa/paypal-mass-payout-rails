@@ -17,6 +17,7 @@ class PayoutBatch < ActiveRecord::Base
   before_validation :set_pending_status, on: :create
   before_validation :set_sender_batch_it, on: :create
 
+  has_many :payout_items
   belongs_to :currency
 
   validates :status, presence: true
@@ -34,7 +35,7 @@ class PayoutBatch < ActiveRecord::Base
   private
 
   def set_pending_status
-    self.status = 'PENDING'
+    self.status = 'UNSENT'
   end
 
   def set_sender_batch_it
