@@ -35,6 +35,8 @@ class PayoutBatch < ActiveRecord::Base
   validates :currency, presence: true
 
   def fetch
+    pp_payout_batch = PayPal::SDK::REST::Payout.get(self.paypal_id)
+    update_from_paypal(pp_payout_batch)
   end
 
   def post
@@ -55,6 +57,16 @@ class PayoutBatch < ActiveRecord::Base
       items: self.payout_items.map(&:format_for_paypal) }
   end
 
+  def update_from_paypal(pp_payout_batch)
+    self.paypal_id = pp_payout_batch.batch_header.payout_batch_id
+    self.status = pp_payout_batch.batch_header.batch_status
+    self.amount = pp_payout_batch.batch_header.amount.value.to_f
+    self.fees = pp_payout_batch.batch_header.fees.value.to_f
+    save!
+
+    update_items_from_paypal(pp_payout_batch)
+  end
+
   private
 
   def set_unsent_status
@@ -65,9 +77,12 @@ class PayoutBatch < ActiveRecord::Base
     self.sender_batch_id = SecureRandom.hex(8) if self.sender_batch_id.blank?
   end
 
-  def update_from_paypal(pp_payout_batch)
-    self.status = pp_payout_batch.batch_header.batch_status
-    self.paypal_id = pp_payout_batch.batch_header.payout_batch_id
-    save!
+  def update_items_from_paypal(pp_payout_batch)
+    pp_payout_batch.items.each do |item_details|
+      payout_item = self.payout_items.
+        find_by(sender_item_id: item_details.payout_item.sender_item_id)
+
+      payout_item.update_from_paypal(item_details)
+    end
   end
 end
