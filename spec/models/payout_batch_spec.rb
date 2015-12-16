@@ -49,22 +49,22 @@ describe PayoutBatch do
 
   describe '#fetch and #post' do
     let!(:pp_payout_status) { 'SUCCESS' }
+    let!(:pp_payout_batch_id) { 'BA3JVV5G4SCZN' }
 
     let!(:pp_payout_values) do
-      {
-        batch_header: {
-          batch_status: pp_payout_status,
-          amount: { value: '10.0', currency: 'EUR' },
-          fees: { value: '0.2', currency: 'EUR' },
-          payout_batch_id: 'BA3JVV5G4SCZN'
-        }
-      }
+      items = batch.payout_items.map do |i|
+        { sender_item_id: i.sender_item_id }
+      end
+
+      batch_values(batch_status: pp_payout_status,
+                   payout_batch_id: pp_payout_batch_id,
+                   items: items)
     end
 
+
     describe '#fetch' do
-      let!(:batch) { FactoryGirl.create(:payout_batch_with_items,
-                                        :pending,
-                                        items_count: 1) }
+      let!(:batch) { FactoryGirl.create(:payout_batch_with_items, :pending) }
+      let!(:pp_payout) { double_payout_batch(pp_payout_values) }
 
       it 'sends a payout view order to Paypal' do
         allow(batch).to receive(:update_from_paypal)
@@ -74,16 +74,24 @@ describe PayoutBatch do
         batch.fetch
       end
 
-      it 'updates the instance' do
-        pp_payout = double_payout_batch(pp_payout_values)
-
+      it 'updates the batch and items' do
         expect(PayPal::SDK::REST::Payout).to receive(:get).
           with(batch.paypal_id).
           and_return(pp_payout)
-
+      
         expect(batch.status).to eq 'PENDING'
         expect(batch.amount).to eq 0.0
         expect(batch.fees).to eq 0.0
+
+        pp_payout.items.each do |item|
+          payout_item = batch.payout_items.
+            find_by(sender_item_id: item.payout_item.sender_item_id)
+
+          expect(payout_item.paypal_id).to eq nil
+          expect(payout_item.transaction_id).to eq nil
+          expect(payout_item.transaction_status).to eq 'UNSENT'
+          expect(payout_item.fees).to eq 0.0
+        end
 
         batch.fetch
         batch.reload
@@ -91,6 +99,16 @@ describe PayoutBatch do
         expect(batch.status).to eq 'SUCCESS'
         expect(batch.amount).to eq 10.0
         expect(batch.fees).to eq 0.2
+
+        pp_payout.items.each do |item|
+          payout_item = batch.payout_items.
+            find_by(sender_item_id: item.payout_item.sender_item_id)
+
+          expect(payout_item.paypal_id).to eq item.payout_item_id
+          expect(payout_item.transaction_id).to eq item.transaction_id
+          expect(payout_item.transaction_status).to eq 'SUCCESS'
+          expect(payout_item.fees).to eq 0.2
+        end
       end
     end
 
@@ -114,7 +132,7 @@ describe PayoutBatch do
           batch.post
         end
 
-        it 'updates the instance' do
+        it 'updates the batch' do
           pp_payout_batch = double_payout_batch(pp_payout_values)
 
           expect(PayPal::SDK::REST::Payout).to receive(:new).and_return(pp_payout)

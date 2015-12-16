@@ -9,12 +9,13 @@
 #  fees               :float            default(0.0), not null
 #  note               :string
 #  sender_item_id     :string
-#  time_processed     :date
+#  time_processed     :datetime
 #  payout_batch_id    :integer
 #  currency_id        :integer
 #  payee_id           :integer
 #  created_at         :datetime         not null
 #  updated_at         :datetime         not null
+#  paypal_id          :string
 #
 
 class PayoutItem < ActiveRecord::Base
@@ -36,8 +37,6 @@ class PayoutItem < ActiveRecord::Base
   validates :currency, presence: true
   validates :payee, presence: true
 
-  def fetch
-  end
 
   def format_for_paypal
     { recipient_type: 'EMAIL',
@@ -49,6 +48,20 @@ class PayoutItem < ActiveRecord::Base
       sender_item_id: self.sender_item_id }
   end
 
+  def update_from_paypal(pp_item_detail)
+    if self.sender_item_id == pp_item_detail.payout_item.sender_item_id
+      self.paypal_id = pp_item_detail.payout_item_id
+      self.transaction_id = pp_item_detail.transaction_id
+      self.transaction_status = pp_item_detail.transaction_status
+      self.fees = pp_item_detail.payout_item_fee.value.to_f
+      self.time_processed = Time.parse(pp_item_detail.time_processed)
+      save!
+    else
+      raise StandardError.new("Calling update_from_paypal for item[#{self.id}] 
+                              with incoherent sender_item_id 
+                              [#{pp_item_detail.payout_item.sender_item_id}]")
+    end
+  end
 
   private
 
