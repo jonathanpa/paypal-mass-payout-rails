@@ -48,7 +48,7 @@ group :development do
   gem 'spring'
   gem 'annotate'
   gem 'guard'
-  gem 'guard-rspec'
+  gem 'guard-rspec', require: false
 end
 
 group :test do
