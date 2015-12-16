@@ -35,6 +35,8 @@ class PayoutBatch < ActiveRecord::Base
   validates :currency, presence: true
 
   def fetch
+    pp_payout_batch = PayPal::SDK::REST::Payout.get(self.paypal_id)
+    update_from_paypal(pp_payout_batch)
   end
 
   def post
@@ -68,6 +70,8 @@ class PayoutBatch < ActiveRecord::Base
   def update_from_paypal(pp_payout_batch)
     self.status = pp_payout_batch.batch_header.batch_status
     self.paypal_id = pp_payout_batch.batch_header.payout_batch_id
+    self.amount = pp_payout_batch.batch_header.amount.value.to_f
+    self.fees = pp_payout_batch.batch_header.fees.value.to_f
     save!
   end
 end

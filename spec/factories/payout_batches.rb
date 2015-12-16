@@ -3,6 +3,11 @@ FactoryGirl.define do
     email_subject 'You have a Payout !'
     currency { Currency.find_or_create_by(code: 'USD') }
 
+    trait :pending do
+      status 'PENDING'
+      sequence(:paypal_id) { |n| "AAAA#{n}" }
+    end
+
     factory :payout_batch_with_items do
       transient do
         items_count 2

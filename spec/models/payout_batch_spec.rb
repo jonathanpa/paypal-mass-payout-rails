@@ -47,55 +47,95 @@ describe PayoutBatch do
     end
   end
 
-  describe '#post' do
-    context 'status UNSENT' do
-      let!(:batch) { FactoryGirl.create(:payout_batch_with_items) }
+  describe '#fetch and #post' do
+    let!(:pp_payout_status) { 'SUCCESS' }
 
-      let!(:pp_payout) { double(PayPal::SDK::REST::Payment) }
+    let!(:pp_payout_values) do
+      {
+        batch_header: {
+          batch_status: pp_payout_status,
+          amount: { value: '10.0', currency: 'EUR' },
+          fees: { value: '0.2', currency: 'EUR' },
+          payout_batch_id: 'BA3JVV5G4SCZN'
+        }
+      }
+    end
 
-      it 'sends a payout POST request to Paypal' do
+    describe '#fetch' do
+      let!(:batch) { FactoryGirl.create(:payout_batch_with_items,
+                                        :pending,
+                                        items_count: 1) }
+
+      it 'sends a payout view order to Paypal' do
         allow(batch).to receive(:update_from_paypal)
+        expect(PayPal::SDK::REST::Payout).to receive(:get).
+          with(batch.paypal_id)
 
-        expected_batch_hash = batch.format_for_paypal
-
-        expect(PayPal::SDK::REST::Payout).to receive(:new).
-          with(expected_batch_hash).
-          and_return(pp_payout)
-
-        expect(pp_payout).to receive(:create)
-
-        batch.post
+        batch.fetch
       end
 
       it 'updates the instance' do
-        pp_payout_batch_header =
-          instance_double(PayPal::SDK::REST::DataTypes::PayoutBatchHeader,
-                         batch_status: 'PENDING',
-                         payout_batch_id: 'BA3JVV5G4SCZN')
+        pp_payout = double_payout_batch(pp_payout_values)
 
-        pp_payout_batch =
-          instance_double(PayPal::SDK::REST::DataTypes::PayoutBatch,
-                         batch_header: pp_payout_batch_header)
-
-        expect(PayPal::SDK::REST::Payout).to receive(:new).and_return(pp_payout)
-        expect(pp_payout).to receive(:create).
-          and_return(pp_payout_batch)
-
-        batch.post
-        batch.reload
+        expect(PayPal::SDK::REST::Payout).to receive(:get).
+          with(batch.paypal_id).
+          and_return(pp_payout)
 
         expect(batch.status).to eq 'PENDING'
-        expect(batch.paypal_id).to eq 'BA3JVV5G4SCZN'
+        expect(batch.amount).to eq 0.0
+        expect(batch.fees).to eq 0.0
+
+        batch.fetch
+        batch.reload
+
+        expect(batch.status).to eq 'SUCCESS'
+        expect(batch.amount).to eq 10.0
+        expect(batch.fees).to eq 0.2
       end
     end
 
-    context 'status != UNSENT' do
-      let!(:batch) { FactoryGirl.create(:payout_batch_with_items,
-                                        status: 'SUCCESS') }
+    describe '#post' do
+      context 'status UNSENT' do
+        let!(:pp_payout_status) { 'PENDING' }
+        let!(:batch) { FactoryGirl.create(:payout_batch_with_items) }
+        let!(:pp_payout) { double(PayPal::SDK::REST::Payment) }
 
-      it { expect { batch.post }.
+        it 'sends a payout create order to Paypal' do
+          allow(batch).to receive(:update_from_paypal)
+
+          expected_batch_hash = batch.format_for_paypal
+
+          expect(PayPal::SDK::REST::Payout).to receive(:new).
+            with(expected_batch_hash).
+            and_return(pp_payout)
+
+          expect(pp_payout).to receive(:create)
+
+          batch.post
+        end
+
+        it 'updates the instance' do
+          pp_payout_batch = double_payout_batch(pp_payout_values)
+
+          expect(PayPal::SDK::REST::Payout).to receive(:new).and_return(pp_payout)
+          expect(pp_payout).to receive(:create).
+            and_return(pp_payout_batch)
+
+          batch.post
+          batch.reload
+
+          expect(batch.status).to eq 'PENDING'
+          expect(batch.paypal_id).to eq 'BA3JVV5G4SCZN'
+        end
+      end
+
+      context 'status != UNSENT' do
+        let!(:batch) { FactoryGirl.create(:payout_batch_with_items, :pending) }
+
+        it { expect { batch.post }.
              to raise_error(Paypal::MassPayout::BatchSentException,
                             /already sent/) }
+      end
     end
   end
 end
