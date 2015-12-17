@@ -1,0 +1,40 @@
+<p id="notice"><%= notice %></p>
+<p id="alert"><%= alert %></p>
+
+<p>
+  <strong>Paypal ID:</strong>
+  <%= @payout_batch.paypal_id %>
+</p>
+
+<p>
+  <strong>Status:</strong>
+  <%= @payout_batch.amount %>
+</p>
+
+<p>
+  <strong>Sender batch ID:</strong>
+  <%= @payout_batch.sender_batch_id %>
+</p>
+
+<p>
+  <strong>Email subject:</strong>
+  <%= @payout_batch.email_subject %>
+</p>
+
+<p>
+  <strong>Amount:</strong>
+  <%= @payout_batch.amount %>
+</p>
+
+<p>
+  <strong>Fees:</strong>
+  <%= @payout_batch.fees %>
+</p>
+
+<p>
+  <strong>Currency:</strong>
+  <%= @payout_batch.currency %>
+</p>
+
+
+<%= link_to 'Back', payout_batches_path %>

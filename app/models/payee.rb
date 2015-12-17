@@ -11,7 +11,9 @@
 #
 
 class Payee < ActiveRecord::Base
-  # has_many :payouts
+  has_many :payout_items
+  has_many :payout_batches, through: :payout_items
+
   belongs_to :currency
 
   validates :email, presence: true, uniqueness: { case_sensitive: false }
@@ -20,50 +22,8 @@ class Payee < ActiveRecord::Base
 
   validates :currency, presence: true
 
-  # after_create :sign_up
-  #
-  # def make_payout
-  #   description = "Test payout to #{self.email} with amount #{self.balance}"
-  #
-  #   payout = self.payouts.build(payment_id: SecureRandom.hex(8),
-  #                               amount: self.balance,
-  #                               description: description,
-  #                               currency: self.currency)
-  #
-  #   response = payoneer_for_currency::Payout.create(
-  #     program_id: Rails.application.secrets.payoneer['usd']['program_id'],
-  #     payment_id: payout.payment_id,
-  #     payee_id: self.email,
-  #     amount: self.balance,
-  #     description: description,
-  #     payment_date: Time.now,
-  #     currency: self.currency.code)
-  #
-  #   payout.response_code = response.code
-  #   payout.response_description = response.body
-  #   payout.save!
-  #   response
-  # end
-  #
-  # private
-  #
-  # def sign_up
-  #   self.return_tag = SecureRandom.hex(8)
-  #   response = payoneer_for_currency::Payee.signup_url(self.email,
-  #                                                    redirect_url: redirect_url)
-  #   self.sign_up_url = response.body if response.ok?
-  #   save!
-  # end
-  #
-  # def redirect_url
-  #   uri = URI::HTTP.build(host: Rails.application.secrets.payoneer['redirect_host'],
-  #                        port: Rails.application.secrets.payoneer['redirect_port'],
-  #                        path: "/payees/#{self.id}/confirm",
-  #                        query: "tag=#{self.return_tag}")
-  #   uri.to_s
-  # end
-  #
-  # def payoneer_for_currency
-  #   PayoneerManager.send(self.currency.code.downcase)
-  # end
+  def email_currency
+    "#{self.email}_#{self.currency}"
+  end
+
 end
