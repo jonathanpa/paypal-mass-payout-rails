@@ -67,6 +67,14 @@ class PayoutBatch < ActiveRecord::Base
     update_items_from_paypal(pp_payout_batch)
   end
 
+  def sent?
+    self.status != 'UNSENT'
+  end
+
+  def unsent?
+    self.status == 'UNSENT'
+  end
+
   private
 
   def set_unsent_status

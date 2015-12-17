@@ -1,0 +1,29 @@
+<%= form_for(@payout_batch) do |f| %>
+  <% if @payout_batch.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(@payout_batch.errors.count, "error") %> prohibited this payout batch from being saved:</h2>
+
+      <ul>
+      <% @payout_batch.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= f.label :email_subject %><br>
+    <%= f.text_field :email_subject %>
+  </div>
+  <div class="field">
+    <%= f.label :currency %><br>
+    <%= f.collection_select(:currency_id, Currency.all, :id, :code) %>
+  </div>
+  <div class="field">
+    <%= f.label :payees %><br>
+    <%= f.collection_check_boxes(:payee_ids, Payee.all, :id, :email_currency) %>
+  </div>
+  <div class="actions">
+    <%= f.submit %>
+  </div>
+<% end %>

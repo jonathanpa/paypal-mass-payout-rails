@@ -1,0 +1,34 @@
+<p id="notice"><%= notice %></p>
+<p id="alert"><%= alert %></p>
+
+<h1>Listing Payout batches</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>Paypal ID</th>
+      <th>Status</th>
+      <th>Amount</th>
+      <th>Currency</th>
+      <th>Sender batch ID</th>
+      <th></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @payout_batches.each do |batch| %>
+      <tr>
+        <td><%= batch.paypal_id %></td>
+        <td><%= batch.status %></td>
+        <td><%= batch.amount %></td>
+        <td><%= batch.currency %></td>
+        <td><%= batch.sender_batch_id %></td>
+        <td><%= link_to 'Show', batch %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<br>
+
+<%= link_to 'New batch', new_payout_batch_path %>
