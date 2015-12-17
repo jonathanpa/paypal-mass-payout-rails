@@ -2,7 +2,12 @@ Rails.application.routes.draw do
   root 'payees#index'
 
   resources :payees
-  resources :payout_batches, only: %i(index show new create)
+  resources :payout_batches, only: %i(index show new create) do
+    member do
+      post 'post'
+      get 'fetch'
+    end
+  end
   # The priority is based upon order of creation: first created -> highest priority.
   # See how all your routes lay out with "rake routes".
 

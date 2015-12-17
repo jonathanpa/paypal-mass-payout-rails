@@ -1,5 +1,5 @@
 class PayoutBatchesController < ApplicationController
-  before_action :set_payout_batch, only: %i(show)
+  before_action :set_payout_batch, only: %i(show post fetch)
 
   def index
     @payout_batches = PayoutBatch.all
@@ -28,6 +28,26 @@ class PayoutBatchesController < ApplicationController
         notice: 'Payout batch was successfully created.'
     else
       render :new
+    end
+  end
+
+  def fetch
+    begin
+      @payout_batch.fetch
+      redirect_to @payout_batch,
+        notice: 'PayoutBatch refreshed successfully!'
+    rescue StandardError => e
+      redirect_to @payout_batch, alert: "Error: #{e.message}"
+    end
+  end
+
+  def post
+    begin
+      @payout_batch.post
+      redirect_to @payout_batch,
+        notice: 'PayoutBatch sent to Paypal successfully!'
+    rescue StandardError => e
+      redirect_to @payout_batch, alert: "Error: #{e.message}"
     end
   end
 
