@@ -36,6 +36,52 @@
   <%= @payout_batch.currency %>
 </p>
 
+<% if @payout_batch.payout_items.empty? %>
+  <p>
+    <strong>Items:</strong>
+    No items
+  </p>
+
+<% else %>
+  <p>
+    <strong>Items:</strong>
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Paypal ID</th>
+        <th>Transaction ID</th>
+        <th>Sender item ID</th>
+        <th>Transaction status</th>
+        <th>Amount</th>
+        <th>Fees</th>
+        <th>Currency</th>
+        <th>Time processed</th>
+        <th>Payee email</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <% @payout_batch.payout_items.each do |item| %>
+        <tr>
+          <td><%= item.paypal_id %></td>
+          <td><%= item.transaction_id %></td>
+          <td><%= item.sender_item_id %></td>
+          <td><%= item.transaction_status %></td>
+          <td><%= item.amount %></td>
+          <td><%= item.fees %></td>
+          <td><%= item.currency %></td>
+          <td><%= item.time_processed %></td>
+          <td><%= item.payee.email %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+
+  <br>
+<% end %>
+
 
 <%= link_to('Post', post_payout_batch_path(@payout_batch), method: :post) if @payout_batch.unsent? %>
 <%= link_to('Refresh', fetch_payout_batch_path(@payout_batch)) if @payout_batch.sent? %>
