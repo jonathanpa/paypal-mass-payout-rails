@@ -56,4 +56,5 @@ group :test do
 end
 
 gem 'paypal-sdk-rest'
+gem 'hashie'
 

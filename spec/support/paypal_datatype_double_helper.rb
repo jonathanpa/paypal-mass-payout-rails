@@ -1,6 +1,7 @@
 module PaypalDatatypeDoubleHelper
   def double_payout_batch(values)
     values[:batch_header] = double_payout_batch_header(values[:batch_header])
+    values[:error] = nil
 
     values[:items] = values[:items].map do |item|
       double_payout_item_details(item)

@@ -32,22 +32,22 @@ class PayoutBatchesController < ApplicationController
   end
 
   def fetch
-    begin
-      @payout_batch.fetch
+    if @payout_batch.fetch
       redirect_to @payout_batch,
         notice: 'PayoutBatch refreshed successfully!'
-    rescue StandardError => e
-      redirect_to @payout_batch, alert: "Error: #{e.message}"
+    else
+      flash[:alert] = @payout_batch.errors.full_messages.join(', ')
+      render :show
     end
   end
 
   def post
-    begin
-      @payout_batch.post
+    if @payout_batch.post
       redirect_to @payout_batch,
         notice: 'PayoutBatch sent to Paypal successfully!'
-    rescue StandardError => e
-      redirect_to @payout_batch, alert: "Error: #{e.message}"
+    else
+      flash[:alert] = @payout_batch.errors.full_messages.join(', ')
+      render :show
     end
   end
 

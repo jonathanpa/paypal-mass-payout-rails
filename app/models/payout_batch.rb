@@ -35,8 +35,13 @@ class PayoutBatch < ActiveRecord::Base
   validates :currency, presence: true
 
   def fetch
-    pp_payout_batch = PayPal::SDK::REST::Payout.get(self.paypal_id)
-    update_from_paypal(pp_payout_batch)
+    begin
+      pp_payout_batch = PayPal::SDK::REST::Payout.get(self.paypal_id)
+      update_from_paypal(pp_payout_batch)
+    rescue PayPal::SDK::Core::Exceptions::ResourceNotFound
+      self.errors.add(:base, 'PayoutBatch not found')
+      false
+    end
   end
 
   def post
@@ -44,9 +49,12 @@ class PayoutBatch < ActiveRecord::Base
       paypal_payout = PayPal::SDK::REST::Payout.new(format_for_paypal)
       pp_payout_batch = paypal_payout.create
 
-      update_from_paypal(pp_payout_batch)
-    else
-      raise Paypal::MassPayout::BatchSentException.new(self)
+      if pp_payout_batch.error
+        self.errors.add(:base, pp_payout_batch.error['details'].first['issue'])
+        false
+      else
+        update_from_paypal(pp_payout_batch)
+      end
     end
   end
 

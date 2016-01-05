@@ -8,10 +8,10 @@ describe PayoutBatch do
          is_greater_than_or_equal_to(0) }
 
   it { should validate_presence_of(:currency) }
-  
+
   describe 'after_build' do
     context 'on create' do
-      let!(:batch) { FactoryGirl.build(:payout_batch) }
+      let(:batch) { FactoryGirl.build(:payout_batch) }
 
       it { expect { batch.save! }.to change { batch.status }.from(nil).
            to('UNSENT') }
@@ -21,7 +21,7 @@ describe PayoutBatch do
     end
 
     context 'on save on existing batch' do
-      let!(:batch) { FactoryGirl.create(:payout_batch, status: 'PROCESSED') }
+      let(:batch) { FactoryGirl.create(:payout_batch, status: 'PROCESSED') }
 
       it { expect { batch.save! }.not_to change { batch.status } }
       it { expect { batch.save! }.not_to change { batch.sender_batch_id } }
@@ -29,7 +29,7 @@ describe PayoutBatch do
   end
 
   describe '#format_for_paypal' do
-    let!(:batch) { FactoryGirl.create(:payout_batch_with_items) }
+    let(:batch) { FactoryGirl.create(:payout_batch_with_items) }
 
     it 'generates a hash formatted for Paypal API' do
       returned_hash = batch.format_for_paypal
@@ -48,10 +48,10 @@ describe PayoutBatch do
   end
 
   describe '#fetch and #post' do
-    let!(:pp_payout_status) { 'SUCCESS' }
-    let!(:pp_payout_batch_id) { 'BA3JVV5G4SCZN' }
+    let(:pp_payout_status) { 'SUCCESS' }
+    let(:pp_payout_batch_id) { 'BA3JVV5G4SCZN' }
 
-    let!(:pp_payout_values) do
+    let(:pp_payout_values) do
       items = batch.payout_items.map do |i|
         { sender_item_id: i.sender_item_id }
       end
@@ -63,26 +63,30 @@ describe PayoutBatch do
 
 
     describe '#fetch' do
-      let!(:batch) { FactoryGirl.create(:payout_batch_with_items, :pending) }
-      let!(:pp_payout) { double_payout_batch(pp_payout_values) }
+      let(:batch) { FactoryGirl.create(:payout_batch_with_items, :pending) }
+      let(:pp_payout) { double_payout_batch(pp_payout_values) }
 
-      it 'sends a payout view order to Paypal' do
-        allow(batch).to receive(:update_from_paypal)
-        expect(PayPal::SDK::REST::Payout).to receive(:get).
-          with(batch.paypal_id)
-
-        batch.fetch
-      end
-
-      it 'updates the batch and items' do
+      let!(:payout_get_mock) do
         expect(PayPal::SDK::REST::Payout).to receive(:get).
           with(batch.paypal_id).
           and_return(pp_payout)
-      
-        expect(batch.status).to eq 'PENDING'
-        expect(batch.amount).to eq 0.0
-        expect(batch.fees).to eq 0.0
+      end
 
+      it { expect(batch.fetch).to be_truthy }
+
+      it { expect { batch.fetch }.to change { batch.reload.status }.
+           from('PENDING').
+           to('SUCCESS') }
+
+      it { expect { batch.fetch }.to change { batch.reload.amount }.
+           from(0.0).
+           to(10.0) }
+
+      it { expect { batch.fetch }.to change { batch.reload.fees }.
+           from(0.0).
+           to(0.2) }
+
+      it 'updates the items' do
         pp_payout.items.each do |item|
           payout_item = batch.payout_items.
             find_by(sender_item_id: item.payout_item.sender_item_id)
@@ -96,10 +100,6 @@ describe PayoutBatch do
         batch.fetch
         batch.reload
 
-        expect(batch.status).to eq 'SUCCESS'
-        expect(batch.amount).to eq 10.0
-        expect(batch.fees).to eq 0.2
-
         pp_payout.items.each do |item|
           payout_item = batch.payout_items.
             find_by(sender_item_id: item.payout_item.sender_item_id)
@@ -110,49 +110,83 @@ describe PayoutBatch do
           expect(payout_item.fees).to eq 0.2
         end
       end
+
+      context 'not found' do
+        let!(:pp_not_found_exception) do
+          PayPal::SDK::Core::Exceptions::
+            ResourceNotFound.new('Failed.  Response code = 404.')
+        end
+
+        let!(:payout_get_mock) do
+          expect(PayPal::SDK::REST::Payout).to receive(:get).
+            with(batch.paypal_id).
+            and_raise(pp_not_found_exception)
+        end
+
+        it { expect(batch.fetch).to be_falsy }
+        it { expect { batch.fetch }.not_to change { batch.reload.status } }
+        it { expect { batch.fetch }.
+             to change { batch.reload.errors.count }.by(1) }
+      end
     end
 
     describe '#post' do
       context 'status UNSENT' do
-        let!(:pp_payout_status) { 'PENDING' }
-        let!(:batch) { FactoryGirl.create(:payout_batch_with_items) }
-        let!(:pp_payout) { double(PayPal::SDK::REST::Payment) }
+        let(:batch) { FactoryGirl.create(:payout_batch_with_items) }
 
-        it 'sends a payout create order to Paypal' do
-          allow(batch).to receive(:update_from_paypal)
+        let(:pp_payout_status) { 'PENDING' }
+        let(:pp_payout) { double(PayPal::SDK::REST::Payment) }
+        let(:pp_payout_batch) { double_payout_batch(pp_payout_values) }
 
-          expected_batch_hash = batch.format_for_paypal
+        let(:expected_batch_hash) { batch.format_for_paypal }
 
+        let!(:payout_new_mock) do
           expect(PayPal::SDK::REST::Payout).to receive(:new).
             with(expected_batch_hash).
             and_return(pp_payout)
-
-          expect(pp_payout).to receive(:create)
-
-          batch.post
         end
 
-        it 'updates the batch' do
-          pp_payout_batch = double_payout_batch(pp_payout_values)
-
-          expect(PayPal::SDK::REST::Payout).to receive(:new).and_return(pp_payout)
+        let!(:payout_create_mock) do
           expect(pp_payout).to receive(:create).
             and_return(pp_payout_batch)
+        end
 
+        it { expect(batch.post).to be_truthy }
+
+        it 'updates the batch' do
           batch.post
           batch.reload
 
           expect(batch.status).to eq 'PENDING'
           expect(batch.paypal_id).to eq 'BA3JVV5G4SCZN'
         end
+
+        context 'Paypal batch error' do
+          let(:pp_payout_batch) do
+            error_detail = Hashie::Mash.new
+            error_detail.issue = 'The issue'
+
+            payout_batch = Hashie::Mash.new
+            payout_batch.error!.details = [error_detail]
+            payout_batch
+          end
+
+          it { expect(batch.post).to be_falsy }
+          it { expect { batch.post }.not_to change { batch.reload.status } }
+        end
       end
 
       context 'status != UNSENT' do
-        let!(:batch) { FactoryGirl.create(:payout_batch_with_items, :pending) }
+        let(:batch) { FactoryGirl.create(:payout_batch_with_items, :pending) }
 
-        it { expect { batch.post }.
-             to raise_error(Paypal::MassPayout::BatchSentException,
-                            /already sent/) }
+        it { expect(batch.post).to be_falsy }
+
+        it 'does not send a payout create order to Paypal' do
+          expect_any_instance_of(PayPal::SDK::REST::Payout).not_to receive(:create)
+          batch.post
+        end
+
+        it { expect { batch.post }.not_to change { batch.reload.status } }
       end
     end
   end
