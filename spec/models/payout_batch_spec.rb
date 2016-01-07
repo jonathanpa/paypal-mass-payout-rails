@@ -51,25 +51,23 @@ describe PayoutBatch do
     let(:pp_payout_status) { 'SUCCESS' }
     let(:pp_payout_batch_id) { 'BA3JVV5G4SCZN' }
 
-    let(:pp_payout_values) do
-      items = batch.payout_items.map do |i|
-        { sender_item_id: i.sender_item_id }
-      end
-
-      batch_values(batch_status: pp_payout_status,
-                   payout_batch_id: pp_payout_batch_id,
-                   items: items)
+    let(:pp_items) do
+      batch.payout_items.map { |i| { sender_item_id: i.sender_item_id } }
     end
 
+    let(:pp_payout_batch) do
+      batch_double(batch_status: pp_payout_status,
+                   payout_batch_id: pp_payout_batch_id,
+                   items: pp_items)
+    end
 
     describe '#fetch' do
       let(:batch) { FactoryGirl.create(:payout_batch_with_items, :pending) }
-      let(:pp_payout) { double_payout_batch(pp_payout_values) }
 
       let!(:payout_get_mock) do
         expect(PayPal::SDK::REST::Payout).to receive(:get).
           with(batch.paypal_id).
-          and_return(pp_payout)
+          and_return(pp_payout_batch)
       end
 
       it { expect(batch.fetch).to be_truthy }
@@ -87,7 +85,7 @@ describe PayoutBatch do
            to(0.2) }
 
       it 'updates the items' do
-        pp_payout.items.each do |item|
+        pp_payout_batch.items.each do |item|
           payout_item = batch.payout_items.
             find_by(sender_item_id: item.payout_item.sender_item_id)
 
@@ -100,7 +98,7 @@ describe PayoutBatch do
         batch.fetch
         batch.reload
 
-        pp_payout.items.each do |item|
+        pp_payout_batch.items.each do |item|
           payout_item = batch.payout_items.
             find_by(sender_item_id: item.payout_item.sender_item_id)
 
@@ -134,9 +132,9 @@ describe PayoutBatch do
       context 'status UNSENT' do
         let(:batch) { FactoryGirl.create(:payout_batch_with_items) }
 
+        let(:pp_payout) { instance_double(PayPal::SDK::REST::Payout) }
+
         let(:pp_payout_status) { 'PENDING' }
-        let(:pp_payout) { double(PayPal::SDK::REST::Payment) }
-        let(:pp_payout_batch) { double_payout_batch(pp_payout_values) }
 
         let(:expected_batch_hash) { batch.format_for_paypal }
 
@@ -153,22 +151,18 @@ describe PayoutBatch do
 
         it { expect(batch.post).to be_truthy }
 
-        it 'updates the batch' do
-          batch.post
-          batch.reload
+        it { expect { batch.post }.to change { batch.reload.status }.
+             to(pp_payout_status) }
 
-          expect(batch.status).to eq 'PENDING'
-          expect(batch.paypal_id).to eq 'BA3JVV5G4SCZN'
-        end
+        it { expect { batch.post }.to change { batch.reload.paypal_id }.
+             to(pp_payout_batch_id) }
 
         context 'Paypal batch error' do
           let(:pp_payout_batch) do
-            error_detail = Hashie::Mash.new
-            error_detail.issue = 'The issue'
-
-            payout_batch = Hashie::Mash.new
-            payout_batch.error!.details = [error_detail]
-            payout_batch
+            batch_double(batch_status: pp_payout_status,
+                         payout_batch_id: pp_payout_batch_id,
+                         items: pp_items,
+                         error: { details: [{ issue: 'The issue' }] })
           end
 
           it { expect(batch.post).to be_falsy }

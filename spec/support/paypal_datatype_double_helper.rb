@@ -1,41 +1,10 @@
-module PaypalDatatypeDoubleHelper
-  def double_payout_batch(values)
-    values[:batch_header] = double_payout_batch_header(values[:batch_header])
-    values[:error] = nil
-
-    values[:items] = values[:items].map do |item|
-      double_payout_item_details(item)
-    end
-
-    instance_double(PayPal::SDK::REST::DataTypes::PayoutBatch, values)
-  end
-
-  def double_payout_batch_header(values)
-    values[:amount] = double_currency(values[:amount])
-    values[:fees] = double_currency(values[:fees])
-    instance_double(PayPal::SDK::REST::DataTypes::PayoutBatchHeader, values)
-  end
-
-  def double_currency(values)
-    instance_double(PayPal::SDK::REST::DataTypes::Currency, values)
-  end
-
-  def double_payout_item_details(values)
-    values[:payout_item] = double_payout_item(values[:payout_item])
-    values[:payout_item_fee] = double_currency(values[:payout_item_fee])
-    instance_double(PayPal::SDK::REST::DataTypes::PayoutItemDetails, values)
-  end
-
-  def double_payout_item(values)
-    values[:amount] = double_currency(values[:amount])
-    instance_double(PayPal::SDK::REST::DataTypes::PayoutItem, values)
-  end
-
-  def batch_values(batch_status: 'SUCCESS',
+module PaypalDatatypeDouble
+  def batch_double(batch_status: 'SUCCESS',
                    total_amount: 10.0,
                    total_fees: 0.2,
                    currency: 'EUR',
                    payout_batch_id: SecureRandom.hex(8),
+                   error: nil,
                    items: [])
 
     batch = {
@@ -45,16 +14,13 @@ module PaypalDatatypeDoubleHelper
         fees: { value: total_fees.to_s, currency: currency },
         payout_batch_id: payout_batch_id,
       },
+      error: error,
       items: items
     }
 
-    if items.empty?
-      batch[:items] = item_values
-    else
-      batch[:items].map! { |i| item_values(i) }
-    end
+    batch[:items].map! { |i| item_values(i) }
 
-    batch
+    Hashie::Mash.new(batch)
   end
 
   def item_values(amount: '10.0',
@@ -79,6 +45,7 @@ module PaypalDatatypeDoubleHelper
   end
 end
 
+
 RSpec.configure do |c|
-  c.include PaypalDatatypeDoubleHelper
+  c.include PaypalDatatypeDouble
 end
