@@ -54,7 +54,11 @@ class PayoutItem < ActiveRecord::Base
       self.transaction_id = pp_item_detail.transaction_id
       self.transaction_status = pp_item_detail.transaction_status
       self.fees = pp_item_detail.payout_item_fee.value.to_f
-      self.time_processed = Time.parse(pp_item_detail.time_processed)
+
+      if pp_item_detail.time_processed
+        self.time_processed = Time.parse(pp_item_detail.time_processed)
+      end
+
       save!
     else
       raise StandardError.new("Calling update_from_paypal for item[#{self.id}] 
