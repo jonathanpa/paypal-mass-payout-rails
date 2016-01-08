@@ -59,6 +59,7 @@
         <th>Currency</th>
         <th>Time processed</th>
         <th>Payee email</th>
+        <th>Error</th>
       </tr>
     </thead>
 
@@ -74,6 +75,7 @@
           <td><%= item.currency %></td>
           <td><%= item.time_processed %></td>
           <td><%= item.payee.email %></td>
+          <td><%= item.error %></td>
         </tr>
       <% end %>
     </tbody>
