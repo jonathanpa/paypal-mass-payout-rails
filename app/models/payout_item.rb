@@ -16,6 +16,7 @@
 #  created_at         :datetime         not null
 #  updated_at         :datetime         not null
 #  paypal_id          :string
+#  error              :string
 #
 
 class PayoutItem < ActiveRecord::Base
@@ -59,10 +60,14 @@ class PayoutItem < ActiveRecord::Base
         self.time_processed = Time.parse(pp_item_detail.time_processed)
       end
 
+      if pp_item_detail.errors
+        self.error = format_paypal_error_message(pp_item_detail.errors)
+      end
+
       save!
     else
-      raise StandardError.new("Calling update_from_paypal for item[#{self.id}] 
-                              with incoherent sender_item_id 
+      raise StandardError.new("Calling update_from_paypal for item[#{self.id}]
+                              with incoherent sender_item_id
                               [#{pp_item_detail.payout_item.sender_item_id}]")
     end
   end
@@ -74,6 +79,10 @@ class PayoutItem < ActiveRecord::Base
   end
 
   def set_sender_item_id
-    self.sender_item_id = SecureRandom.hex(8) 
+    self.sender_item_id = SecureRandom.hex(8)
+  end
+
+  def format_paypal_error_message(error)
+    "#{error.name}: #{error.message} (#{error.information_link})."
   end
 end

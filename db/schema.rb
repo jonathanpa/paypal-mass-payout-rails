@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20151216183726) do
+ActiveRecord::Schema.define(version: 20160108104639) do
 
   create_table "currencies", force: :cascade do |t|
     t.string   "code",       null: false
@@ -57,6 +57,7 @@ ActiveRecord::Schema.define(version: 20151216183726) do
     t.datetime "created_at",                       null: false
     t.datetime "updated_at",                       null: false
     t.string   "paypal_id"
+    t.string   "error"
   end
 
   add_index "payout_items", ["currency_id"], name: "index_payout_items_on_currency_id"

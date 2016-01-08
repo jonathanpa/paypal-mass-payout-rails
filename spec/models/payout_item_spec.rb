@@ -45,4 +45,32 @@ describe PayoutItem do
       expect(returned_hash[:sender_item_id]).to eq item.sender_item_id
     end
   end
+
+  describe '#update_from_paypal' do
+    let(:payout_item) { FactoryGirl.build(:payout_item) }
+
+    subject { payout_item.update_from_paypal(pp_item_detail) }
+
+    context 'with error' do
+      let(:error) do
+        { name: 'INSUFFICIENT FUNDS',
+          message: 'Sender has insufficient funds',
+          information_link: 'https://developer.paypal.com/webapps/developer/docs/api/#INSUFFICIENT_FUNDS' }
+      end
+
+      let(:pp_item_detail) do
+        item_double(sender_item_id: payout_item.sender_item_id,
+                    transaction_status: 'FAILED',
+                    errors: error)
+      end
+
+      let(:expected_error_msg) do
+        "#{error[:name]}: #{error[:message]} (#{error[:information_link]})."
+      end
+
+      it { expect { subject }.to change { payout_item.error }.
+                                        to(expected_error_msg) }
+
+    end
+  end
 end

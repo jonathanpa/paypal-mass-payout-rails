@@ -18,20 +18,21 @@ module PaypalDatatypeDouble
       items: items
     }
 
-    batch[:items].map! { |i| item_values(i) }
+    batch[:items].map! { |i| item_double(i) }
 
     Hashie::Mash.new(batch)
   end
 
-  def item_values(amount: '10.0',
+  def item_double(amount: '10.0',
                  fee: '0.2',
                  currency: 'EUR',
                  sender_item_id: SecureRandom.hex(8),
                  payout_item_id: SecureRandom.hex(8),
                  time_processed: Time.now.to_formatted_s(:iso8601),
                  transaction_id: SecureRandom.hex(8),
-                 transaction_status: 'SUCCESS')
-    {
+                 transaction_status: 'SUCCESS',
+                 errors: nil)
+    item = {
       payout_item: {
         amount: { value: amount, currency: currency },
         sender_item_id: sender_item_id,
@@ -40,8 +41,11 @@ module PaypalDatatypeDouble
       payout_item_id: payout_item_id,
       time_processed: time_processed,
       transaction_id: transaction_id,
-      transaction_status: transaction_status
-    }
+      transaction_status: transaction_status }
+
+    item[:errors] = errors if errors
+
+    Hashie::Mash.new(item)
   end
 end
 
