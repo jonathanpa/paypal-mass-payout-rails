@@ -56,6 +56,7 @@ group :test do
   gem 'shoulda-matchers', '~> 3.0'
 end
 
-gem 'paypal-sdk-rest'
 gem 'hashie'
+gem 'paypal-sdk-rest'
+gem 'rb-readline'
 
